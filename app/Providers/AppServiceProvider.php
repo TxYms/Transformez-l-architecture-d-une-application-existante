@@ -2,10 +2,25 @@
 
 namespace App\Providers;
 
+use App\Repositories\Contracts\NoteRepositoryInterface;
+use App\Repositories\Contracts\TagRepositoryInterface;
+use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\EloquentNoteRepository;
+use App\Repositories\Eloquent\EloquentTagRepository;
+use App\Repositories\Eloquent\EloquentUserRepository;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    public array $bindings = [
+        NoteRepositoryInterface::class => EloquentNoteRepository::class,
+        TagRepositoryInterface::class => EloquentTagRepository::class,
+        UserRepositoryInterface::class => EloquentUserRepository::class,
+    ];
+
     /**
      * Register any application services.
      */
@@ -19,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

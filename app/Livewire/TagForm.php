@@ -2,22 +2,24 @@
 
 namespace App\Livewire;
 
+use App\Http\Requests\Tag\StoreTagRequest;
+use App\Services\TagService;
 use Livewire\Component;
-use App\Models\Tag;
 
 class TagForm extends Component
 {
     public $name = '';
 
-    protected $rules = [
-        'name' => 'required|string|max:50|unique:tags,name',
-    ];
-
-    public function save()
+    protected function rules(): array
     {
-        $this->validate();
+        return StoreTagRequest::tagRules();
+    }
 
-        Tag::create(['name' => $this->name]);
+    public function save(TagService $tagService)
+    {
+        $validated = $this->validate();
+
+        $tagService->create($validated);
 
         $this->reset('name');
 

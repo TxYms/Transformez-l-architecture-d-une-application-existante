@@ -2,62 +2,67 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use App\Models\Note;
-use App\Models\Tag;
+use App\Http\Requests\Note\StoreNoteRequest;
+use App\Services\NoteService;
+use App\Services\TagService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Component;
 
 class Notes extends Component
 {
     public $notes;
+
     public $text = '';
+
     public $tag_id = '';
+
     public $tags;
 
-    protected $rules = [
-        'text' => 'required|string',
-        'tag_id' => 'required|exists:tags,id',
-    ];
     protected $listeners = ['tagCreated' => 'refreshTags'];
 
-    public function mount()
+    protected function rules(): array
     {
-        $this->tags = Tag::all();
-        $this->loadNotes();
+        return StoreNoteRequest::noteRules();
     }
 
-    public function loadNotes()
+    public function mount(TagService $tagService, NoteService $noteService)
     {
-        $this->notes = Note::with('tag')->where('user_id', Auth::id())->latest()->get();
+        $this->tags = $tagService->list();
+        $this->loadNotes($noteService);
     }
 
-    public function refreshTags()
+    public function loadNotes(NoteService $noteService)
     {
-        $this->tags = \App\Models\Tag::all();
+        $this->notes = $noteService->listFor(Auth::user());
     }
 
-    public function save()
+    public function refreshTags(TagService $tagService)
     {
-        $this->validate();
+        $this->tags = $tagService->list();
+    }
 
-        Note::create([
-            'user_id' => Auth::id(),
-            'tag_id' => $this->tag_id,
-            'text' => $this->text,
-        ]);
+    public function save(NoteService $noteService)
+    {
+        $validated = $this->validate();
+
+        $noteService->createFor(Auth::user(), $validated);
 
         $this->text = '';
         $this->tag_id = '';
 
-        $this->loadNotes();
+        $this->loadNotes($noteService);
 
         session()->flash('message', 'Note added.');
     }
 
-    public function delete($noteId)
+    public function delete($noteId, NoteService $noteService)
     {
-        Note::where('id', $noteId)->where('user_id', Auth::id())->delete();
-        $this->loadNotes();
+        $note = $noteService->find((int) $noteId);
+        Gate::authorize('delete', $note);
+
+        $noteService->delete($note);
+        $this->loadNotes($noteService);
     }
 
     public function render()
