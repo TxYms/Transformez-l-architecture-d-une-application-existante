@@ -142,6 +142,9 @@ app/Models/                    Modèles Eloquent
 app/Policies/                  Autorisations (une note n'est accessible qu'à son auteur)
 app/Exceptions/                Rendu JSON des erreurs de l'API
 routes/api.php                 Routes de l'API
+resources/js/app.jsx           Point d'entrée du front React
+resources/js/services/         Appels à l'API
+resources/js/store/            Store Redux : slices, effets, selectors
+resources/js/ui/components/    Composants d'affichage
+resources/js/ui/pages/         Pages
 ```
-
-Le front Livewire existant reste fonctionnel : il utilise les mêmes services que l'API.
